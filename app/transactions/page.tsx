@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Transaction } from '@/types'
 import { format } from 'date-fns'
-import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight, FileSpreadsheet } from 'lucide-react'
+import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight, FileSpreadsheet, Trash } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { ReceiptScanner } from '@/components/transactions/ReceiptScanner'
 import { CSVImporter } from '@/components/transactions/CSVImporter'
@@ -26,7 +26,7 @@ const getCategoriesForType = (type: 'expense' | 'income') => {
 
 export default function TransactionsPage() {
   const searchParams = useSearchParams()
-  const { transactions, initialize, addTransaction, updateTransaction, deleteTransaction } =
+  const { transactions, initialize, addTransaction, updateTransaction, deleteTransaction, clearAllTransactions } =
     useFinanceStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
@@ -121,6 +121,17 @@ export default function TransactionsPage() {
     }
   }
 
+  const handleClearAll = () => {
+    if (transactions.length === 0) return
+    
+    const confirmed = confirm(
+      `Are you sure you want to delete ALL ${transactions.length} transactions? This action cannot be undone.`
+    )
+    if (confirmed) {
+      clearAllTransactions()
+    }
+  }
+
   const sortedTransactions = [...transactions].sort((a, b) => {
     // First, sort by date (newest first)
     const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -169,7 +180,7 @@ export default function TransactionsPage() {
             <h1 className="text-3xl font-bold mb-2">Transactions</h1>
             <p className="text-muted-foreground">View and manage all your financial transactions</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Button onClick={() => setIsCSVImportOpen(true)} variant="outline">
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               Import CSV
@@ -182,6 +193,16 @@ export default function TransactionsPage() {
               <Plus className="h-4 w-4 mr-2" />
               Add Transaction
             </Button>
+            {transactions.length > 0 && (
+              <Button 
+                onClick={handleClearAll} 
+                variant="outline"
+                className="text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/50"
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Clear All
+              </Button>
+            )}
           </div>
         </div>
 

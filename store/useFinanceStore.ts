@@ -16,6 +16,7 @@ interface FinanceState {
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void
   updateTransaction: (id: string, transaction: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
+  clearAllTransactions: () => void
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'completed'>) => void
   updateGoal: (id: string, goal: Partial<Goal>) => void
   deleteGoal: (id: string) => void
@@ -106,6 +107,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     const transactions = get().transactions.filter((t) => t.id !== id)
     storage.saveTransactions(transactions)
     set({ transactions })
+  },
+
+  clearAllTransactions: () => {
+    storage.saveTransactions([])
+    set({ transactions: [] })
   },
 
   addGoal: (goal) => {

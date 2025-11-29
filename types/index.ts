@@ -30,6 +30,8 @@ export interface Subscription {
   frequency: 'monthly' | 'yearly'
   nextBillingDate: string
   detectedFrom: string[]
+  subscriptionStartDate?: string
+  subscriptionEndDate?: string
 }
 
 export interface Insight {

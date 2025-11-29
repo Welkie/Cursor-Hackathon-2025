@@ -2,12 +2,13 @@
 
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
-  title: string | React.ReactNode
-  children: React.ReactNode
+  title: string | ReactNode
+  children: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
@@ -53,7 +54,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           }}
         >
           <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--card-foreground))' }}>
-            {typeof title === 'string' ? title : title}
+            {title}
           </h2>
           <button
             onClick={onClose}

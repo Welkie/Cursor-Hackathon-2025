@@ -177,6 +177,10 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
         ? format(addMonths(lastDate, 1), 'yyyy-MM-dd')
         : format(addYears(lastDate, 1), 'yyyy-MM-dd')
 
+    // Determine subscription start and end dates
+    const subscriptionStartDate = sortedTransactions[0].subscriptionStartDate || sortedTransactions[0].date
+    const subscriptionEndDate = sortedTransactions[0].subscriptionEndDate
+
     // Create subscription
     const subscription: Subscription = {
       id: `sub_${key}_${Date.now()}`,
@@ -186,6 +190,8 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
       frequency,
       nextBillingDate,
       detectedFrom: sortedTransactions.map((t) => t.id),
+      subscriptionStartDate,
+      subscriptionEndDate,
     }
 
     subscriptions.push(subscription)
