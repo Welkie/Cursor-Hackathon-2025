@@ -40,9 +40,13 @@ export function InsightsPanel({ insights }: InsightsPanelProps) {
     }
   }
 
+  const sortedInsights = [...insights].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+
   return (
     <div className="space-y-3">
-      {insights.map((insight) => (
+      {sortedInsights.map((insight) => (
         <div
           key={insight.id}
           className={`p-4 rounded-lg border ${getBgColor(insight.severity)} animate-fade-in`}

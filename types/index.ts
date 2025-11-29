@@ -6,6 +6,9 @@ export interface Transaction {
   date: string
   type: 'expense' | 'income'
   merchant?: string
+  isSubscription?: boolean
+  subscriptionStartDate?: string
+  subscriptionEndDate?: string
 }
 
 export interface Goal {
@@ -15,6 +18,8 @@ export interface Goal {
   currentAmount: number
   targetDate?: string
   createdAt: string
+  completed: boolean
+  completedAt?: string
 }
 
 export interface Subscription {

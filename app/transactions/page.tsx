@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Transaction } from '@/types'
 import { format } from 'date-fns'
-import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { ReceiptScanner } from '@/components/transactions/ReceiptScanner'
 
@@ -40,6 +40,9 @@ export default function TransactionsPage() {
     date: format(new Date(), 'yyyy-MM-dd'),
     type: 'expense' as 'expense' | 'income',
     merchant: '',
+    isSubscription: false,
+    subscriptionStartDate: format(new Date(), 'yyyy-MM-dd'),
+    subscriptionEndDate: '',
   })
 
   useEffect(() => {
@@ -54,13 +57,17 @@ export default function TransactionsPage() {
 
   const handleOpenModal = () => {
     setEditingTransaction(null)
+    const today = format(new Date(), 'yyyy-MM-dd')
     setFormData({
       amount: '',
       category: 'Food',
       note: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: today,
       type: 'expense',
       merchant: '',
+      isSubscription: false,
+      subscriptionStartDate: today,
+      subscriptionEndDate: '',
     })
     setIsModalOpen(true)
   }
@@ -74,6 +81,9 @@ export default function TransactionsPage() {
       date: transaction.date,
       type: transaction.type,
       merchant: transaction.merchant || '',
+      isSubscription: transaction.isSubscription || false,
+      subscriptionStartDate: transaction.subscriptionStartDate || transaction.date,
+      subscriptionEndDate: transaction.subscriptionEndDate || '',
     })
     setIsModalOpen(true)
   }
@@ -87,6 +97,13 @@ export default function TransactionsPage() {
       date: formData.date,
       type: formData.type,
       merchant: formData.merchant || undefined,
+      isSubscription: formData.type === 'expense' ? formData.isSubscription : undefined,
+      subscriptionStartDate: formData.type === 'expense' && formData.isSubscription 
+        ? formData.subscriptionStartDate 
+        : undefined,
+      subscriptionEndDate: formData.type === 'expense' && formData.isSubscription && formData.subscriptionEndDate
+        ? formData.subscriptionEndDate
+        : undefined,
     }
 
     if (editingTransaction) {
@@ -105,9 +122,26 @@ export default function TransactionsPage() {
     }
   }
 
-  const sortedTransactions = [...transactions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    // First, sort by date (newest first)
+    const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime()
+    if (dateDiff !== 0) return dateDiff
+    
+    // If same date, sort by creation time (later/newer on top)
+    // Extract timestamp from ID (format: txn_<timestamp>_<random>)
+    const getTimestampFromId = (id: string): number => {
+      const parts = id.split('_')
+      if (parts.length >= 2) {
+        const timestamp = parseInt(parts[1])
+        return isNaN(timestamp) ? 0 : timestamp
+      }
+      return 0
+    }
+    
+    const timeA = getTimestampFromId(a.id)
+    const timeB = getTimestampFromId(b.id)
+    return timeB - timeA // Newer (larger timestamp) first
+  })
 
   return (
     <div className="min-h-screen bg-background">
@@ -168,7 +202,25 @@ export default function TransactionsPage() {
                           <span className="text-sm capitalize">{transaction.type}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-sm">{transaction.category}</td>
+                      <td className="p-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          {transaction.category}
+                          {transaction.isSubscription && (
+                            <>
+                              {transaction.subscriptionEndDate && 
+                               new Date(transaction.subscriptionEndDate) < new Date() ? (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-500/10 text-gray-500 rounded-full border border-gray-500/20">
+                                  Cancelled
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-purple-500/10 text-purple-500 rounded-full border border-purple-500/20">
+                                  Subscription
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4 text-sm">{transaction.merchant || '-'}</td>
                       <td className="p-4 text-sm text-muted-foreground">{transaction.note}</td>
                       <td
@@ -266,6 +318,56 @@ export default function TransactionsPage() {
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />
+
+            {formData.type === 'expense' && (
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="isSubscription"
+                    checked={formData.isSubscription}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked
+                      setFormData({
+                        ...formData,
+                        isSubscription: isChecked,
+                        subscriptionStartDate: isChecked ? formData.subscriptionStartDate : '',
+                        subscriptionEndDate: isChecked ? formData.subscriptionEndDate : '',
+                      })
+                    }}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="isSubscription" className="text-sm font-medium cursor-pointer">
+                    Mark as subscription
+                  </label>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Helps Subscription Radar detect recurring payments
+                  </span>
+                </div>
+                
+                {formData.isSubscription && (
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border animate-fade-in">
+                    <Input
+                      label="Subscription Start Date"
+                      type="date"
+                      value={formData.subscriptionStartDate}
+                      onChange={(e) => setFormData({ ...formData, subscriptionStartDate: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Subscription End Date (optional)"
+                      type="date"
+                      value={formData.subscriptionEndDate}
+                      onChange={(e) => setFormData({ ...formData, subscriptionEndDate: e.target.value })}
+                      placeholder="Leave empty for ongoing"
+                    />
+                    <p className="col-span-2 text-xs text-muted-foreground">
+                      Set the date range for this subscription. Leave end date empty for ongoing subscriptions.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" className="flex-1">

@@ -73,7 +73,10 @@ export default function DashboardPage() {
   const totalSavings = goals.reduce((sum, g) => sum + g.currentAmount, 0)
   const totalGoalTargets = goals.reduce((sum, g) => sum + g.targetAmount, 0)
 
-  const recentInsights = insights.slice(0, 3)
+  const recentInsights = [...insights]
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .slice(-3)
+    .reverse()
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,15 +93,15 @@ export default function DashboardPage() {
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">This Month Expenses</p>
-                <p className="text-2xl font-bold">${thisMonthExpenses.toFixed(2)}</p>
+                <p className="text-sm text-foreground/70 mb-1">This Month Expenses</p>
+                <p className="text-2xl font-bold text-foreground">${thisMonthExpenses.toFixed(2)}</p>
                 <div className="flex items-center gap-1 mt-2">
                   {expenseChange >= 0 ? (
                     <TrendingUp className="h-4 w-4 text-red-500" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-green-500" />
                   )}
-                  <span className={`text-sm ${expenseChange >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                  <span className={`text-sm font-medium ${expenseChange >= 0 ? 'text-red-500' : 'text-green-500'}`}>
                     {Math.abs(expenseChange).toFixed(1)}% vs last month
                   </span>
                 </div>
@@ -112,9 +115,9 @@ export default function DashboardPage() {
           <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">This Month Income</p>
-                <p className="text-2xl font-bold">${thisMonthIncome.toFixed(2)}</p>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-foreground/70 mb-1">This Month Income</p>
+                <p className="text-2xl font-bold text-foreground">${thisMonthIncome.toFixed(2)}</p>
+                <p className="text-sm text-foreground/70 mt-2">
                   Net: ${(thisMonthIncome - thisMonthExpenses).toFixed(2)}
                 </p>
               </div>
@@ -127,9 +130,9 @@ export default function DashboardPage() {
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Savings</p>
-                <p className="text-2xl font-bold">${totalSavings.toFixed(2)}</p>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-foreground/70 mb-1">Total Savings</p>
+                <p className="text-2xl font-bold text-foreground">${totalSavings.toFixed(2)}</p>
+                <p className="text-sm text-foreground/70 mt-2">
                   {goals.length} active goal{goals.length !== 1 ? 's' : ''}
                 </p>
               </div>
@@ -142,9 +145,9 @@ export default function DashboardPage() {
           <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">AI Insights</p>
-                <p className="text-2xl font-bold">{insights.length}</p>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-foreground/70 mb-1">AI Insights</p>
+                <p className="text-2xl font-bold text-foreground">{insights.length}</p>
+                <p className="text-sm text-foreground/70 mt-2">
                   {recentInsights.length} new this week
                 </p>
               </div>

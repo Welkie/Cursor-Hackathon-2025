@@ -6,11 +6,11 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { Subscription } from '@/types'
 import { format } from 'date-fns'
-import { Radar, Calendar, DollarSign, RefreshCw } from 'lucide-react'
+import { Radar, Calendar, DollarSign, RefreshCw, X } from 'lucide-react'
 import { detectSubscriptions } from '@/utils/subscriptionDetection'
 
 export default function SubscriptionsPage() {
-  const { transactions, subscriptions, initialize, setSubscriptions } = useFinanceStore()
+  const { transactions, subscriptions, initialize, setSubscriptions, cancelSubscription } = useFinanceStore()
 
   useEffect(() => {
     initialize()
@@ -26,6 +26,12 @@ export default function SubscriptionsPage() {
   const handleRefresh = () => {
     const detected = detectSubscriptions(transactions)
     setSubscriptions(detected)
+  }
+
+  const handleCancel = (subscriptionId: string) => {
+    if (confirm('Are you sure you want to cancel this subscription? This will mark it as ended.')) {
+      cancelSubscription(subscriptionId)
+    }
   }
 
   const getNextBillingDays = (date: string) => {
@@ -71,8 +77,8 @@ export default function SubscriptionsPage() {
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Subscriptions</p>
-                <p className="text-2xl font-bold">{subscriptions.length}</p>
+                <p className="text-sm text-foreground/70 mb-1">Total Subscriptions</p>
+                <p className="text-2xl font-bold text-foreground">{subscriptions.length}</p>
               </div>
               <div className="p-3 rounded-lg bg-purple-500/10">
                 <Radar className="h-6 w-6 text-purple-500" />
@@ -83,9 +89,9 @@ export default function SubscriptionsPage() {
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Monthly Cost</p>
-                <p className="text-2xl font-bold">${totalMonthlyEquivalent.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground mt-1">per month</p>
+                <p className="text-sm text-foreground/70 mb-1">Monthly Cost</p>
+                <p className="text-2xl font-bold text-foreground">${totalMonthlyEquivalent.toFixed(2)}</p>
+                <p className="text-xs text-foreground/70 mt-1">per month</p>
               </div>
               <div className="p-3 rounded-lg bg-blue-500/10">
                 <DollarSign className="h-6 w-6 text-blue-500" />
@@ -96,9 +102,9 @@ export default function SubscriptionsPage() {
           <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Yearly Cost</p>
-                <p className="text-2xl font-bold">${(totalMonthlyEquivalent * 12).toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground mt-1">per year</p>
+                <p className="text-sm text-foreground/70 mb-1">Yearly Cost</p>
+                <p className="text-2xl font-bold text-foreground">${(totalMonthlyEquivalent * 12).toFixed(2)}</p>
+                <p className="text-xs text-foreground/70 mt-1">per year</p>
               </div>
               <div className="p-3 rounded-lg bg-orange-500/10">
                 <Calendar className="h-6 w-6 text-orange-500" />
@@ -121,7 +127,18 @@ export default function SubscriptionsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subscriptions.map((subscription) => {
+            {[...subscriptions].sort((a, b) => {
+              // Sort by earliest transaction date (absolute detection time)
+              const getEarliestDate = (subscription: Subscription) => {
+                const relatedTransactions = transactions.filter((t) =>
+                  subscription.detectedFrom.includes(t.id)
+                )
+                if (relatedTransactions.length === 0) return new Date(subscription.nextBillingDate)
+                const dates = relatedTransactions.map((t) => new Date(t.date).getTime())
+                return new Date(Math.min(...dates))
+              }
+              return getEarliestDate(b).getTime() - getEarliestDate(a).getTime()
+            }).map((subscription) => {
               const daysUntil = getNextBillingDays(subscription.nextBillingDate)
               const isUpcoming = daysUntil <= 7
 
@@ -135,6 +152,16 @@ export default function SubscriptionsPage() {
                   <CardHeader
                     title={subscription.name}
                     description={subscription.category}
+                    action={
+                      <button
+                        onClick={() => handleCancel(subscription.id)}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors text-red-500"
+                        aria-label="Cancel subscription"
+                        title="Cancel subscription"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    }
                   />
 
                   <div className="space-y-4">
@@ -162,6 +189,35 @@ export default function SubscriptionsPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Show subscription date range if available */}
+                    {(() => {
+                      const relatedTransactions = transactions.filter((t) =>
+                        subscription.detectedFrom.includes(t.id)
+                      )
+                      const hasStartDate = relatedTransactions.some((t) => t.subscriptionStartDate)
+                      const hasEndDate = relatedTransactions.some((t) => t.subscriptionEndDate)
+                      
+                      if (hasStartDate || hasEndDate) {
+                        const startDate = relatedTransactions.find((t) => t.subscriptionStartDate)?.subscriptionStartDate
+                        const endDate = relatedTransactions.find((t) => t.subscriptionEndDate)?.subscriptionEndDate
+                        
+                        return (
+                          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Calendar className="h-4 w-4 text-blue-500" />
+                              <span className="text-xs font-medium text-blue-500">Subscription Period</span>
+                            </div>
+                            <p className="text-sm">
+                              {startDate && format(new Date(startDate), 'MMM d, yyyy')}
+                              {startDate && endDate && ' - '}
+                              {endDate ? format(new Date(endDate), 'MMM d, yyyy') : 'Ongoing'}
+                            </p>
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
 
                     <div className="pt-2 border-t border-border">
                       <p className="text-xs text-muted-foreground">

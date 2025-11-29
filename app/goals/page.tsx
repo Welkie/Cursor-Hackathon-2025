@@ -9,12 +9,12 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Goal } from '@/types'
 import { format } from 'date-fns'
-import { Plus, Target, TrendingUp, Calendar, DollarSign } from 'lucide-react'
+import { Plus, Target, TrendingUp, Calendar, DollarSign, Trash2, CheckCircle2, Circle } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
 export default function GoalsPage() {
   const searchParams = useSearchParams()
-  const { goals, initialize, addGoal, updateGoal, deleteGoal, addToGoal } = useFinanceStore()
+  const { goals, initialize, addGoal, updateGoal, deleteGoal, addToGoal, toggleGoalCompletion } = useFinanceStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddAmountModalOpen, setIsAddAmountModalOpen] = useState(false)
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null)
@@ -96,7 +96,7 @@ export default function GoalsPage() {
   }
 
   const calculateWeeklySavings = (goal: Goal) => {
-    if (!goal.targetDate) return null
+    if (!goal.targetDate || goal.completed) return null
     const targetDate = new Date(goal.targetDate)
     const now = new Date()
     const weeksRemaining = Math.max(
@@ -106,6 +106,23 @@ export default function GoalsPage() {
     const remaining = goal.targetAmount - goal.currentAmount
     return remaining > 0 ? remaining / weeksRemaining : 0
   }
+
+  const handleDelete = (id: string) => {
+    if (confirm('Are you sure you want to delete this goal?')) {
+      deleteGoal(id)
+    }
+  }
+
+  const handleToggleCompletion = (goal: Goal) => {
+    toggleGoalCompletion(goal.id)
+  }
+
+  const incompleteGoals = [...goals].filter((g) => !g.completed).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+  const completedGoals = [...goals].filter((g) => g.completed).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,34 +150,46 @@ export default function GoalsPage() {
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {goals.map((goal) => {
-              const progress = calculateProgress(goal)
-              const weeklySavings = calculateWeeklySavings(goal)
+          <>
+            {/* Incomplete Goals */}
+            {incompleteGoals.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-4">Active Goals</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {incompleteGoals.map((goal) => {
+                    const progress = calculateProgress(goal)
+                    const weeklySavings = calculateWeeklySavings(goal)
 
-              return (
-                <Card key={goal.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader
-                    title={goal.title}
-                    action={
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAddAmount(goal)}
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                          aria-label="Add amount"
-                        >
-                          <DollarSign className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(goal)}
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                          aria-label="Edit goal"
-                        >
-                          <Target className="h-4 w-4" />
-                        </button>
-                      </div>
-                    }
-                  />
+                    return (
+                      <Card key={goal.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader
+                          title={goal.title}
+                          action={
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAddAmount(goal)}
+                                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                aria-label="Add amount"
+                              >
+                                <DollarSign className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEdit(goal)}
+                                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                aria-label="Edit goal"
+                              >
+                                <Target className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(goal.id)}
+                                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-red-500"
+                                aria-label="Delete goal"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          }
+                        />
 
                   <div className="space-y-4">
                     {/* Progress Bar */}
@@ -217,7 +246,7 @@ export default function GoalsPage() {
                     )}
 
                     {/* Actions */}
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       <Button
                         onClick={() => handleAddAmount(goal)}
                         variant="outline"
@@ -226,12 +255,115 @@ export default function GoalsPage() {
                       >
                         Add Money
                       </Button>
+                      <Button
+                        onClick={() => handleToggleCompletion(goal)}
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Mark Complete
+                      </Button>
                     </div>
                   </div>
                 </Card>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+            {/* Completed Goals */}
+            {completedGoals.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Completed Goals</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {completedGoals.map((goal) => {
+                    const progress = calculateProgress(goal)
+
+                    return (
+                      <Card
+                        key={goal.id}
+                        className="hover:shadow-lg transition-shadow opacity-75 border-green-500/30 bg-green-500/5"
+                      >
+                        <CardHeader
+                          title={
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              <span>{goal.title}</span>
+                            </div>
+                          }
+                          action={
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleToggleCompletion(goal)}
+                                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                aria-label="Mark incomplete"
+                              >
+                                <Circle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(goal.id)}
+                                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-red-500"
+                                aria-label="Delete goal"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          }
+                        />
+
+                        <div className="space-y-4">
+                          {/* Progress Bar */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-muted-foreground">Progress</span>
+                              <span className="text-sm font-medium text-green-500">
+                                {progress.toFixed(0)}% ✓
+                              </span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Amounts */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Current</span>
+                              <span className="text-lg font-bold text-green-500">
+                                ${goal.currentAmount.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Target</span>
+                              <span className="text-sm font-medium">${goal.targetAmount.toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          {/* Completed Date */}
+                          {goal.completedAt && (
+                            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                <span className="text-xs font-medium text-green-500">Completed</span>
+                              </div>
+                              <p className="text-sm text-foreground mt-1">
+                                {format(new Date(goal.completedAt), 'MMM d, yyyy')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Create/Edit Goal Modal */}

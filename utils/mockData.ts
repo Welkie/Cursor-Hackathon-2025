@@ -32,6 +32,31 @@ export function generateMockTransactions(): Transaction[] {
     })
   }
 
+  // Add some subscription transactions (Netflix, Spotify, etc.)
+  const subscriptionMerchants = ['Netflix', 'Spotify', 'Apple']
+  const subscriptionAmounts = [15.99, 9.99, 4.99]
+  
+  subscriptionMerchants.forEach((merchant, index) => {
+    // Add 2-3 transactions per subscription to simulate monthly pattern
+    const startDate = format(subDays(new Date(), 90), 'yyyy-MM-dd')
+    for (let i = 0; i < 3; i++) {
+      const daysAgo = 30 * (i + 1) // 30, 60, 90 days ago
+      transactions.push({
+        id: `txn_sub_${merchant}_${i}`,
+        amount: subscriptionAmounts[index],
+        category: 'Entertainment',
+        note: `${merchant} subscription`,
+        date: format(subDays(new Date(), daysAgo), 'yyyy-MM-dd'),
+        type: 'expense',
+        merchant,
+        isSubscription: true,
+        subscriptionStartDate: startDate,
+        // Only add startDate to first transaction to avoid duplicates
+        subscriptionEndDate: i === 0 ? undefined : undefined,
+      })
+    }
+  })
+
   // Add some income
   for (let i = 0; i < 3; i++) {
     transactions.push({
@@ -56,6 +81,7 @@ export function generateMockGoals(): Goal[] {
       currentAmount: 450,
       targetDate: format(subMonths(new Date(), -3), 'yyyy-MM-dd'),
       createdAt: format(subMonths(new Date(), 1), 'yyyy-MM-dd'),
+      completed: false,
     },
     {
       id: 'goal_2',
@@ -63,6 +89,7 @@ export function generateMockGoals(): Goal[] {
       targetAmount: 5000,
       currentAmount: 1200,
       createdAt: format(subMonths(new Date(), 2), 'yyyy-MM-dd'),
+      completed: false,
     },
   ]
 }
