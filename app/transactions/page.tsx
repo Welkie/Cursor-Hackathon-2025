@@ -13,18 +13,15 @@ import { format } from 'date-fns'
 import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { ReceiptScanner } from '@/components/transactions/ReceiptScanner'
+import { EXPENSE_CATEGORIES, getCategoryColor } from '@/utils/categories'
 
-const CATEGORIES = [
-  'Food',
-  'Transport',
-  'Shopping',
-  'Bills',
-  'Entertainment',
-  'Health',
-  'Education',
-  'Salary',
-  'Other',
-]
+// Income categories
+const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Gift', 'Refund', 'Other Income']
+
+// Combined categories based on transaction type
+const getCategoriesForType = (type: 'expense' | 'income') => {
+  return type === 'income' ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES]
+}
 
 export default function TransactionsPage() {
   const searchParams = useSearchParams()
@@ -56,7 +53,7 @@ export default function TransactionsPage() {
     setEditingTransaction(null)
     setFormData({
       amount: '',
-      category: 'Food',
+      category: 'Food & Dining',
       note: '',
       date: format(new Date(), 'yyyy-MM-dd'),
       type: 'expense',
@@ -168,7 +165,15 @@ export default function TransactionsPage() {
                           <span className="text-sm capitalize">{transaction.type}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-sm">{transaction.category}</td>
+                      <td className="p-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ backgroundColor: getCategoryColor(transaction.category) }}
+                          />
+                          {transaction.category}
+                        </div>
+                      </td>
                       <td className="p-4 text-sm">{transaction.merchant || '-'}</td>
                       <td className="p-4 text-sm text-muted-foreground">{transaction.note}</td>
                       <td
@@ -222,7 +227,15 @@ export default function TransactionsPage() {
                   { value: 'income', label: 'Income' },
                 ]}
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'expense' | 'income' })}
+                onChange={(e) => {
+                  const newType = e.target.value as 'expense' | 'income'
+                  const newCategories = getCategoriesForType(newType)
+                  setFormData({ 
+                    ...formData, 
+                    type: newType,
+                    category: newCategories[0] 
+                  })
+                }}
                 required
               />
               <Input
@@ -238,7 +251,7 @@ export default function TransactionsPage() {
 
             <Select
               label="Category"
-              options={CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+              options={getCategoriesForType(formData.type).map((cat) => ({ value: cat, label: cat }))}
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
