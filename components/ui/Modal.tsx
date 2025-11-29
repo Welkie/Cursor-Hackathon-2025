@@ -6,7 +6,7 @@ import { X } from 'lucide-react'
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
-  title: string
+  title: string | React.ReactNode
   children: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
@@ -34,25 +34,45 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md" />
       <div
-        className={`relative z-50 w-full ${sizeClasses[size]} bg-card rounded-lg shadow-xl border border-border animate-slide-up`}
+        className={`relative z-50 w-full ${sizeClasses[size]} rounded-lg shadow-2xl border border-border animate-slide-up my-auto max-h-[90vh] flex flex-col modal-content`}
+        style={{
+          backgroundColor: 'hsl(var(--card))',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-semibold">{title}</h2>
+        <div 
+          className="flex items-center justify-between p-6 border-b border-border flex-shrink-0"
+          style={{
+            backgroundColor: 'hsl(var(--card))',
+          }}
+        >
+          <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--card-foreground))' }}>
+            {typeof title === 'string' ? title : title}
+          </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-muted transition-colors"
+            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            style={{ color: 'hsl(var(--foreground))' }}
             aria-label="Close modal"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div 
+          className="p-6 overflow-y-auto flex-1"
+          style={{
+            backgroundColor: 'hsl(var(--card))',
+            color: 'hsl(var(--card-foreground))',
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   )

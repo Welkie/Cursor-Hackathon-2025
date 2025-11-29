@@ -10,21 +10,19 @@ import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Transaction } from '@/types'
 import { format } from 'date-fns'
-import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react'
+import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight, FileSpreadsheet } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { ReceiptScanner } from '@/components/transactions/ReceiptScanner'
+import { CSVImporter } from '@/components/transactions/CSVImporter'
+import { EXPENSE_CATEGORIES, getCategoryColor } from '@/utils/categories'
 
-const CATEGORIES = [
-  'Food',
-  'Transport',
-  'Shopping',
-  'Bills',
-  'Entertainment',
-  'Health',
-  'Education',
-  'Salary',
-  'Other',
-]
+// Income categories
+const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Gift', 'Refund', 'Other Income']
+
+// Combined categories based on transaction type
+const getCategoriesForType = (type: 'expense' | 'income') => {
+  return type === 'income' ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES]
+}
 
 export default function TransactionsPage() {
   const searchParams = useSearchParams()
@@ -32,10 +30,11 @@ export default function TransactionsPage() {
     useFinanceStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [isCSVImportOpen, setIsCSVImportOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [formData, setFormData] = useState({
     amount: '',
-    category: 'Food',
+    category: 'Food & Dining',
     note: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     type: 'expense' as 'expense' | 'income',
@@ -60,7 +59,7 @@ export default function TransactionsPage() {
     const today = format(new Date(), 'yyyy-MM-dd')
     setFormData({
       amount: '',
-      category: 'Food',
+      category: 'Food & Dining',
       note: '',
       date: today,
       type: 'expense',
@@ -128,19 +127,37 @@ export default function TransactionsPage() {
     if (dateDiff !== 0) return dateDiff
     
     // If same date, sort by creation time (later/newer on top)
-    // Extract timestamp from ID (format: txn_<timestamp>_<random>)
+    // Extract timestamp from ID (format: txn_<timestamp>_<random> or txn_sub_<merchant>_<index>)
     const getTimestampFromId = (id: string): number => {
       const parts = id.split('_')
-      if (parts.length >= 2) {
+      // Handle format: txn_<timestamp>_<random>
+      if (parts.length >= 3 && parts[0] === 'txn' && parts[1] !== 'sub' && parts[1] !== 'income') {
         const timestamp = parseInt(parts[1])
-        return isNaN(timestamp) ? 0 : timestamp
+        if (!isNaN(timestamp) && timestamp > 0) {
+          return timestamp
+        }
       }
+      // Handle format: txn_income_<timestamp>_<index>
+      if (parts.length >= 4 && parts[1] === 'income') {
+        const timestamp = parseInt(parts[2])
+        if (!isNaN(timestamp) && timestamp > 0) {
+          return timestamp
+        }
+      }
+      // For other formats (like txn_sub_*), use 0 as fallback (will maintain original order)
       return 0
     }
     
     const timeA = getTimestampFromId(a.id)
     const timeB = getTimestampFromId(b.id)
-    return timeB - timeA // Newer (larger timestamp) first
+    
+    // If both have valid timestamps, sort by timestamp (newer/later first)
+    if (timeA > 0 && timeB > 0) {
+      return timeB - timeA // Newer (larger timestamp) first = later transaction on top
+    }
+    
+    // If timestamps are equal or invalid, maintain stable order (keep original position)
+    return 0
   })
 
   return (
@@ -153,6 +170,10 @@ export default function TransactionsPage() {
             <p className="text-muted-foreground">View and manage all your financial transactions</p>
           </div>
           <div className="flex gap-3">
+            <Button onClick={() => setIsCSVImportOpen(true)} variant="outline">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
             <Button onClick={() => setIsScannerOpen(true)} variant="outline">
               <Receipt className="h-4 w-4 mr-2" />
               Scan Receipt
@@ -204,6 +225,10 @@ export default function TransactionsPage() {
                       </td>
                       <td className="p-4 text-sm">
                         <div className="flex items-center gap-2">
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ backgroundColor: getCategoryColor(transaction.category) }}
+                          />
                           {transaction.category}
                           {transaction.isSubscription && (
                             <>
@@ -274,7 +299,15 @@ export default function TransactionsPage() {
                   { value: 'income', label: 'Income' },
                 ]}
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'expense' | 'income' })}
+                onChange={(e) => {
+                  const newType = e.target.value as 'expense' | 'income'
+                  const newCategories = getCategoriesForType(newType)
+                  setFormData({ 
+                    ...formData, 
+                    type: newType,
+                    category: newCategories[0] 
+                  })
+                }}
                 required
               />
               <Input
@@ -290,7 +323,7 @@ export default function TransactionsPage() {
 
             <Select
               label="Category"
-              options={CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+              options={getCategoriesForType(formData.type).map((cat) => ({ value: cat, label: cat }))}
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
@@ -320,7 +353,7 @@ export default function TransactionsPage() {
             />
 
             {formData.type === 'expense' && (
-              <div className="space-y-4 p-4 bg-muted rounded-lg">
+              <div className="space-y-4 p-4 rounded-lg border border-border/50" style={{ backgroundColor: 'hsl(var(--muted) / 0.8)' }}>
                 <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
@@ -394,6 +427,15 @@ export default function TransactionsPage() {
           onSave={(transaction) => {
             addTransaction(transaction)
             setIsScannerOpen(false)
+          }}
+        />
+
+        {/* CSV Import Modal */}
+        <CSVImporter
+          isOpen={isCSVImportOpen}
+          onClose={() => setIsCSVImportOpen(false)}
+          onImport={(transactions) => {
+            transactions.forEach(transaction => addTransaction(transaction))
           }}
         />
       </main>

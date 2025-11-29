@@ -1,0 +1,37 @@
+date,amount,category,note,merchant,type
+2025-11-01,125.50,Groceries,Weekly grocery shopping,Walmart,expense
+2025-11-01,5.75,Coffee & Cafe,Morning latte,Starbucks,expense
+2025-11-02,45.00,Gas & Fuel,Fill up tank,Shell,expense
+2025-11-03,2850.00,Salary,Monthly salary,,income
+2025-11-03,12.99,Fast Food,Lunch with team,McDonald's,expense
+2025-11-04,89.99,Shopping,New running shoes,Nike,expense
+2025-11-05,15.99,Streaming Services,Monthly subscription,Netflix,expense
+2025-11-05,9.99,Streaming Services,Music subscription,Spotify,expense
+2025-11-06,35.00,Rideshare,Airport trip,Uber,expense
+2025-11-07,150.00,Restaurant,Birthday dinner,Olive Garden,expense
+2025-11-08,25.00,Fitness,Monthly gym fee,Planet Fitness,expense
+2025-11-09,200.00,Freelance,Website project,,income
+2025-11-10,67.50,Groceries,Organic produce,Whole Foods,expense
+2025-11-10,8.50,Coffee & Cafe,Afternoon coffee,Dunkin,expense
+2025-11-11,120.00,Bills & Utilities,Internet bill,Comcast,expense
+2025-11-12,55.00,Phone,Mobile plan,T-Mobile,expense
+2025-11-13,42.00,Entertainment,Movie tickets,AMC Theaters,expense
+2025-11-14,180.00,Clothing,Winter jacket,H&M,expense
+2025-11-15,500.00,Investment,Dividend payment,,income
+2025-11-15,23.99,Books,Programming book,Amazon,expense
+2025-11-16,75.00,Health & Wellness,Doctor visit copay,Medical Center,expense
+2025-11-17,18.50,Pharmacy,Vitamins,CVS,expense
+2025-11-18,95.00,Shopping,Home decor,Target,expense
+2025-11-19,32.00,Fast Food,Family dinner,Chick-fil-A,expense
+2025-11-20,400.00,Refund,Product return,Amazon,income
+2025-11-21,65.00,Beauty,Skincare products,Sephora,expense
+2025-11-22,28.00,Pets,Dog food,PetSmart,expense
+2025-11-23,145.00,Electronics,Wireless earbuds,Best Buy,expense
+2025-11-24,50.00,Gift,Birthday gift for mom,,expense
+2025-11-25,88.00,Groceries,Thanksgiving prep,Costco,expense
+2025-11-26,15.00,Coffee & Cafe,Coffee beans,Local Roaster,expense
+2025-11-27,220.00,Travel,Flight booking,Delta Airlines,expense
+2025-11-28,175.00,Hotels,Hotel reservation,Marriott,expense
+2025-11-29,38.00,Gas & Fuel,Road trip fuel,Chevron,expense
+2025-11-30,2850.00,Salary,Monthly salary,,income
+

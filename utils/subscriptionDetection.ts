@@ -24,7 +24,17 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
     if (t.subscriptionEndDate && t.subscriptionEndDate < today) return false
     return true
   })
-  const regularTransactions = transactions.filter((t) => t.type === 'expense' && !t.isSubscription)
+  // Include all expense transactions for pattern detection (not just unmarked ones)
+  // This allows detection even if some transactions aren't explicitly marked
+  const regularTransactions = transactions.filter((t) => {
+    if (t.type !== 'expense') return false
+    // Include transactions that aren't marked as subscriptions, or are marked but cancelled
+    if (t.isSubscription) {
+      // Only include if cancelled (for historical pattern detection)
+      return t.subscriptionEndDate && t.subscriptionEndDate < today
+    }
+    return true
+  })
   
   // Process subscription-marked transactions first
   subscriptionTransactions.forEach((transaction) => {
@@ -79,15 +89,31 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     )
 
-    // Check if amounts are similar (within 10% variance)
-    // If explicitly marked as subscription, relax the variance check to 20%
+    // Calculate average amount
     const avgAmount = data.amounts.reduce((sum, a) => sum + a, 0) / data.amounts.length
-    const varianceThreshold = hasExplicitSubscriptions ? 0.2 : 0.1
-    const isSimilarAmount = data.amounts.every(
-      (amount) => Math.abs(amount - avgAmount) / avgAmount < varianceThreshold
-    )
-
-    if (!isSimilarAmount) return
+    
+    // Check if amounts are similar (within variance threshold)
+    // Skip variance check if only one transaction and explicitly marked (single transaction subscriptions)
+    if (hasExplicitSubscriptions && data.amounts.length === 1) {
+      // Single transaction marked as subscription - proceed without variance check
+    } else if (data.amounts.length > 1) {
+      // For multiple transactions, check variance
+      const varianceThreshold = hasExplicitSubscriptions ? 0.25 : 0.15 // More lenient thresholds
+      // Handle edge case where avgAmount is 0 or very small
+      if (avgAmount > 0.01) { // Use small threshold instead of 0
+        const isSimilarAmount = data.amounts.every(
+          (amount) => {
+            const variance = Math.abs(amount - avgAmount) / avgAmount
+            return variance < varianceThreshold
+          }
+        )
+        if (!isSimilarAmount) return
+      } else {
+        // If average is too small, check if all amounts are the same (exact match)
+        const allSame = data.amounts.every(amount => amount === data.amounts[0])
+        if (!allSame) return
+      }
+    }
 
     // Check date intervals to determine frequency
     const intervals: number[] = []
@@ -108,15 +134,36 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
     if (hasExplicitSubscriptions && intervals.length === 0) {
       // If explicitly marked but only one transaction, default to monthly
       frequency = 'monthly'
-    } else if (avgInterval >= 25 && avgInterval <= 35) {
-      frequency = 'monthly'
-    } else if (avgInterval >= 350 && avgInterval <= 380) {
-      frequency = 'yearly'
-    } else if (avgInterval < 25 && !hasExplicitSubscriptions) {
-      // Too frequent, might not be a subscription (unless explicitly marked)
-      return
+    } else if (intervals.length > 0) {
+      // We have interval data to analyze
+      if (avgInterval >= 25 && avgInterval <= 35) {
+        frequency = 'monthly'
+      } else if (avgInterval >= 350 && avgInterval <= 380) {
+        frequency = 'yearly'
+      } else if (avgInterval >= 20 && avgInterval < 25) {
+        // Slightly more frequent than monthly, but still could be monthly (allow it)
+        frequency = 'monthly'
+      } else if (avgInterval > 35 && avgInterval < 45) {
+        // Slightly less frequent than monthly, but still could be monthly (allow it)
+        frequency = 'monthly'
+      } else if (avgInterval < 20 && !hasExplicitSubscriptions) {
+        // Too frequent for monthly subscription (unless explicitly marked)
+        // But allow if we have at least 2 transactions with similar amounts
+        if (data.transactions.length < 2) {
+          return
+        }
+        // For frequent transactions, still allow if explicitly marked
+        frequency = 'monthly'
+      } else {
+        // Default to monthly for other intervals (more lenient)
+        frequency = 'monthly'
+      }
     } else {
-      // Default to monthly for other intervals or explicitly marked subscriptions
+      // No intervals (single transaction or same-day transactions)
+      // Default to monthly for explicitly marked subscriptions
+      if (!hasExplicitSubscriptions) {
+        return // Need at least 2 transactions for unmarked subscriptions
+      }
       frequency = 'monthly'
     }
 
@@ -144,12 +191,13 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
     subscriptions.push(subscription)
   })
 
-  // Remove duplicates (same merchant/category)
+  // Remove duplicates (same merchant/category/amount)
+  // Use a more lenient comparison - same name and category is enough (amount might vary slightly)
   const uniqueSubscriptions = subscriptions.filter(
     (sub, index, self) =>
       index ===
       self.findIndex(
-        (s) => s.name === sub.name && s.category === sub.category && s.amount === sub.amount
+        (s) => s.name === sub.name && s.category === sub.category
       )
   )
 

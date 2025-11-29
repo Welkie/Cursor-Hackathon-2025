@@ -5,10 +5,11 @@ import { useFinanceStore } from '@/store/useFinanceStore'
 import { Navbar } from '@/components/layout/Navbar'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns'
-import { TrendingUp, TrendingDown, DollarSign, Target, Brain, Receipt } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Target, Brain, Receipt, Zap } from 'lucide-react'
 import { ExpenseChart } from '@/components/charts/ExpenseChart'
 import { CategoryChart } from '@/components/charts/CategoryChart'
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel'
+import { ForecastCard } from '@/components/dashboard/ForecastCard'
 import { generateInsights } from '@/utils/insights'
 import { detectSubscriptions } from '@/utils/subscriptionDetection'
 import Link from 'next/link'
@@ -30,14 +31,14 @@ export default function DashboardPage() {
   }, [initialize])
 
   useEffect(() => {
+    // Always run detection, even if transactions array is empty
+    const detectedSubscriptions = detectSubscriptions(transactions)
+    setSubscriptions(detectedSubscriptions)
+    
+    // Generate insights only if there are transactions
     if (transactions.length > 0) {
-      // Generate insights
       const newInsights = generateInsights(transactions)
       newInsights.forEach((insight) => addInsight(insight))
-
-      // Detect subscriptions
-      const detectedSubscriptions = detectSubscriptions(transactions)
-      setSubscriptions(detectedSubscriptions)
     }
   }, [transactions, addInsight, setSubscriptions])
 
@@ -191,27 +192,16 @@ export default function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader title="Quick Actions" />
-            <div className="space-y-3">
-              <Link href="/transactions?action=add">
-                <Button className="w-full justify-start" variant="outline">
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Add Transaction
-                </Button>
-              </Link>
-              <Link href="/goals?action=add">
-                <Button className="w-full justify-start" variant="outline">
-                  <Target className="h-4 w-4 mr-2" />
-                  Create Goal
-                </Button>
-              </Link>
-              <Link href="/subscriptions">
-                <Button className="w-full justify-start" variant="outline">
-                  <Brain className="h-4 w-4 mr-2" />
-                  View Subscriptions
-                </Button>
-              </Link>
-            </div>
+            <CardHeader 
+              title="EOM Balance Forecast" 
+              description="AI-powered prediction"
+              action={
+                <div className="flex items-center gap-1 text-primary">
+                  <Zap className="h-4 w-4" />
+                </div>
+              }
+            />
+            <ForecastCard transactions={transactions} />
           </Card>
         </div>
       </main>

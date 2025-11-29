@@ -20,13 +20,17 @@ export function generateMockTransactions(): Transaction[] {
     const amount = Math.floor(Math.random() * 200) + 5
     const category = randomItem(categories)
     const merchant = randomItem(merchants)
+    const transactionDate = randomDate(60)
+    // Generate unique timestamp for each transaction to ensure proper sorting
+    const baseTime = new Date(transactionDate).getTime()
+    const timeOffset = i * 1000 // Add 1 second per transaction to ensure unique timestamps
     
     transactions.push({
-      id: `txn_${Date.now()}_${i}`,
+      id: `txn_${baseTime + timeOffset}_${Math.random().toString(36).substr(2, 9)}`,
       amount,
       category,
       note: `${merchant} purchase`,
-      date: randomDate(60),
+      date: transactionDate,
       type: 'expense',
       merchant,
     })
@@ -41,30 +45,38 @@ export function generateMockTransactions(): Transaction[] {
     const startDate = format(subDays(new Date(), 90), 'yyyy-MM-dd')
     for (let i = 0; i < 3; i++) {
       const daysAgo = 30 * (i + 1) // 30, 60, 90 days ago
+      const transactionDate = format(subDays(new Date(), daysAgo), 'yyyy-MM-dd')
+      const baseTime = new Date(transactionDate).getTime()
+      // Generate unique timestamp for subscription transactions
+      const uniqueTimestamp = baseTime + (index * 10000) + (i * 1000)
+      
       transactions.push({
-        id: `txn_sub_${merchant}_${i}`,
+        id: `txn_${uniqueTimestamp}_${Math.random().toString(36).substr(2, 9)}`,
         amount: subscriptionAmounts[index],
         category: 'Entertainment',
         note: `${merchant} subscription`,
-        date: format(subDays(new Date(), daysAgo), 'yyyy-MM-dd'),
+        date: transactionDate,
         type: 'expense',
         merchant,
         isSubscription: true,
         subscriptionStartDate: startDate,
-        // Only add startDate to first transaction to avoid duplicates
-        subscriptionEndDate: i === 0 ? undefined : undefined,
+        subscriptionEndDate: undefined,
       })
     }
   })
 
   // Add some income
   for (let i = 0; i < 3; i++) {
+    const transactionDate = randomDate(30)
+    const baseTime = new Date(transactionDate).getTime()
+    const uniqueTimestamp = baseTime + (i * 2000) // Add 2 seconds per income transaction
+    
     transactions.push({
-      id: `txn_income_${Date.now()}_${i}`,
+      id: `txn_${uniqueTimestamp}_${Math.random().toString(36).substr(2, 9)}`,
       amount: Math.floor(Math.random() * 2000) + 1000,
       category: 'Salary',
       note: 'Monthly salary',
-      date: randomDate(30),
+      date: transactionDate,
       type: 'income',
     })
   }

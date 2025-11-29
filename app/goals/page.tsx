@@ -442,7 +442,7 @@ export default function GoalsPage() {
           <div className="space-y-4">
             {selectedGoal && (
               <>
-                <div className="p-4 bg-muted rounded-lg">
+                <div className="p-4 rounded-lg border border-border/50" style={{ backgroundColor: 'hsl(var(--muted) / 0.8)' }}>
                   <p className="text-sm text-muted-foreground mb-1">Goal</p>
                   <p className="font-semibold">{selectedGoal.title}</p>
                   <div className="flex items-center justify-between mt-2">

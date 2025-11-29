@@ -17,10 +17,9 @@ export default function SubscriptionsPage() {
   }, [initialize])
 
   useEffect(() => {
-    if (transactions.length > 0) {
-      const detected = detectSubscriptions(transactions)
-      setSubscriptions(detected)
-    }
+    // Always run detection, even if transactions array is empty (to clear old subscriptions)
+    const detected = detectSubscriptions(transactions)
+    setSubscriptions(detected)
   }, [transactions, setSubscriptions])
 
   const handleRefresh = () => {

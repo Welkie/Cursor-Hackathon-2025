@@ -71,3 +71,50 @@ html {
   background: hsl(var(--primary));
 }
 
+/* Modal visibility improvements */
+.modal-content {
+  background-color: hsl(var(--card)) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Ensure form elements have proper contrast */
+input, select, textarea {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+  opacity: 0.7;
+}
+
+/* Dark mode modal improvements */
+.dark .modal-content {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Ensure modal text has proper contrast */
+.modal-content,
+.modal-content * {
+  color: hsl(var(--card-foreground)) !important;
+}
+
+.modal-content label {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 500;
+}
+
+/* Improve form section visibility */
+.modal-content [style*="background-color"] {
+  opacity: 1 !important;
+}
+
+/* Better contrast for muted backgrounds in modals */
+.modal-content .bg-muted,
+.modal-content [style*="--muted"] {
+  background-color: hsl(var(--muted)) !important;
+  opacity: 0.9 !important;
+}
+
