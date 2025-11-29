@@ -9,6 +9,7 @@ import {
   Legend,
 } from 'chart.js'
 import { Transaction } from '@/types'
+import { getCategoryColor } from '@/utils/categories'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -16,16 +17,17 @@ interface CategoryChartProps {
   transactions: Transaction[]
 }
 
-const COLORS = [
-  'rgba(59, 130, 246, 0.8)',   // blue
-  'rgba(239, 68, 68, 0.8)',    // red
-  'rgba(34, 197, 94, 0.8)',     // green
-  'rgba(251, 146, 60, 0.8)',    // orange
-  'rgba(168, 85, 247, 0.8)',    // purple
-  'rgba(236, 72, 153, 0.8)',    // pink
-  'rgba(14, 165, 233, 0.8)',    // sky
-  'rgba(234, 179, 8, 0.8)',     // yellow
-]
+// Helper to convert hex to rgba
+function hexToRgba(hex: string, alpha: number = 0.8): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (result) {
+    const r = parseInt(result[1], 16)
+    const g = parseInt(result[2], 16)
+    const b = parseInt(result[3], 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+  return hex
+}
 
 export function CategoryChart({ transactions }: CategoryChartProps) {
   const chartData = useMemo(() => {
@@ -39,13 +41,14 @@ export function CategoryChart({ transactions }: CategoryChartProps) {
 
     const categories = Object.keys(categoryTotals)
     const amounts = categories.map((cat) => categoryTotals[cat])
+    const colors = categories.map((cat) => hexToRgba(getCategoryColor(cat)))
 
     return {
       labels: categories,
       datasets: [
         {
           data: amounts,
-          backgroundColor: COLORS.slice(0, categories.length),
+          backgroundColor: colors,
           borderWidth: 2,
           borderColor: 'hsl(var(--background))',
         },
