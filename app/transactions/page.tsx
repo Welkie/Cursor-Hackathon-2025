@@ -10,9 +10,10 @@ import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { Transaction } from '@/types'
 import { format } from 'date-fns'
-import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Plus, Edit, Trash2, Receipt, ArrowUpRight, ArrowDownRight, FileSpreadsheet } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { ReceiptScanner } from '@/components/transactions/ReceiptScanner'
+import { CSVImporter } from '@/components/transactions/CSVImporter'
 import { EXPENSE_CATEGORIES, getCategoryColor } from '@/utils/categories'
 
 // Income categories
@@ -29,6 +30,7 @@ export default function TransactionsPage() {
     useFinanceStore()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [isCSVImportOpen, setIsCSVImportOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [formData, setFormData] = useState({
     amount: '',
@@ -116,6 +118,10 @@ export default function TransactionsPage() {
             <p className="text-muted-foreground">View and manage all your financial transactions</p>
           </div>
           <div className="flex gap-3">
+            <Button onClick={() => setIsCSVImportOpen(true)} variant="outline">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
             <Button onClick={() => setIsScannerOpen(true)} variant="outline">
               <Receipt className="h-4 w-4 mr-2" />
               Scan Receipt
@@ -305,6 +311,15 @@ export default function TransactionsPage() {
           onSave={(transaction) => {
             addTransaction(transaction)
             setIsScannerOpen(false)
+          }}
+        />
+
+        {/* CSV Import Modal */}
+        <CSVImporter
+          isOpen={isCSVImportOpen}
+          onClose={() => setIsCSVImportOpen(false)}
+          onImport={(transactions) => {
+            transactions.forEach(transaction => addTransaction(transaction))
           }}
         />
       </main>
